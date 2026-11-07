@@ -1,0 +1,7 @@
+{
+  "name": "CoFoundr AI",
+  "description": "AI-powered startup co-founder and advisory board platform providing multi-agent strategic insights, pitch deck diagnostics, and governance tools.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
