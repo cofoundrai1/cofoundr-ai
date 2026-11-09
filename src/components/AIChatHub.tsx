@@ -190,7 +190,7 @@ export const AIChatHub: React.FC<AIChatHubProps> = ({ initialPrompt = '' }) => {
     }
   }, [initialPrompt]);
 
-  const handleSendMessage = (textToSend?: string) => {
+  const handleSendMessage = async (textToSend?: string) => {
     const text = textToSend || inputMessage;
     if (!text.trim() || isStreaming) return;
 
@@ -207,266 +207,37 @@ export const AIChatHub: React.FC<AIChatHubProps> = ({ initialPrompt = '' }) => {
 
     // Read the user's idea and classify
     const classification = detectBusinessType(text);
+    try {
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      const prompt = `You are CoFoundr AI, an expert co-founder. User idea: "${text}". If it's a small shop, give Simple Shop Plan with location, equipment cost, daily profit. If it's a tech startup, give Boardroom Plan with CTO, CMO, CFO advice. Be specific, actionable, in simple English.`;
 
-    setTimeout(() => {
-      let aiContent = '';
-      let agentName = '';
-      let agentTitle = '';
-      let reasoning: string[] = [];
-      let shopPlanData: ShopPlanData | undefined = undefined;
-      let deckAuditData = undefined;
-      const planType: 'shop_plan' | 'boardroom_plan' = classification.isShop
-        ? 'shop_plan'
-        : 'boardroom_plan';
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      });
 
-      // =====================================================================
-      // CASE 1: SMALL SHOP (e.g. Chai Stall, Cafe, Bakery, Food Truck, etc.)
-      // =====================================================================
-      if (classification.isShop) {
-        agentName = 'CoFoundr Retail & Shop Advisor';
-        agentTitle = 'Micro-Retail Execution Specialist';
-        reasoning = [
-          `Identified business category: "${classification.categoryName}"`,
-          'Bypassing VC pitch decks: Over-engineered tech models not required for local cashflow',
-          'Calculating pedestrian footfall catchment & rush-hour patterns',
-          'Sourcing lean equipment checklist (total capital < $1,000)',
-          'Modeling daily unit economics (target 70%+ gross profit margin)',
-        ];
-
-        const isChai = text.toLowerCase().includes('chai') || text.toLowerCase().includes('tea');
-        const isBakery = text.toLowerCase().includes('bakery') || text.toLowerCase().includes('bread');
-
-        if (isChai) {
-          shopPlanData = {
-            shopType: 'High-Traffic Masala Chai Stall',
-            locationStrategy: {
-              recommendedSpots: [
-                'Metro Station Exit (Pedestrian morning stream, 7:30 AM - 10:30 AM)',
-                'Tech / IT Park Gate (Afternoon tea breaks, 3:30 PM - 6:30 PM)',
-                'University Campus Corner or Coaching Center Hub (Evening hangout)',
-                'Hospital / Commercial Market Outer Perimeter',
-              ],
-              peakHours: '7:30 AM – 10:30 AM & 4:00 PM – 7:30 PM (65% of daily volume)',
-              rentGuideline: 'Negotiate $80 – $180/mo (₹6,000 – ₹15,000/mo) for 30–50 sq ft curb spot.',
-            },
-            equipmentCosts: [
-              { item: 'Heavy-Duty Commercial Gas Burner & Regulator', cost: '$65 / ₹5,200' },
-              { item: 'Hand-Hammered Brass Tea Urn & Stainless Kettles', cost: '$45 / ₹3,600' },
-              { item: 'Insulated Fresh Milk Chiller & Ingredient Tins', cost: '$55 / ₹4,400' },
-              { item: 'Eco Clay Kulhads / Glass Tumblers & Washing Basins', cost: '$35 / ₹2,800' },
-              { item: 'Branded Wooden Counter, Acrylic Signage & Stand', cost: '$95 / ₹7,500' },
-              { item: 'Initial Inventory (Assam CTC, Ginger, Cardamom, Sugar, Milk)', cost: '$80 / ₹6,400' },
-              { item: 'Digital Soundbox (Instant QR audio confirmation)', cost: '$15 / ₹1,200' },
-            ],
-            totalInitialInvestment: '$390 / ₹31,100',
-            unitEconomics: {
-              sellingPricePerUnit: '$0.25 (₹20) per cup',
-              costPerUnit: '$0.07 (₹6) per cup (Milk, CTC Tea, Spices, Cup)',
-              grossMarginPercent: '70% Gross Margin',
-              dailyVolumeTarget: '300 cups / day',
-              estimatedDailyProfit: '$54 / ₹4,200 net profit per day',
-              estimatedMonthlyTakeHome: '$1,620 / ₹1,26,000 net take-home / month',
-            },
-            signatureItems: [
-              'Kadak Adrak-Elaichi (Crushed Ginger & Green Cardamom Signature)',
-              'Kulhad Irani Chai with Maska Bun pairing (Adds 45% ticket size)',
-              'Sugar-Free Gud (Jaggery) Winter Chai alternative',
-            ],
-            launchChecklist: [
-              'Day 1: Footfall Audit — count 30-min pedestrians at 8 AM and 5 PM at target stall.',
-              'Day 2: Local Vendor Registration / Food Safety Permit (FSSAI in India or municipal vendor card).',
-              'Day 3: Lock in daily morning dairy partnership (Whole buffalo milk for rich creaminess).',
-              'Day 4: Test batch tasting: Calibrate ginger pungency and sweetness with 15 friends.',
-              'Day 5: Grand Opening: "First 100 Cups Free" promotion to create an instant neighborhood queue.',
-            ],
-          };
-
-          aiContent = `### ☕ Simple Shop Execution Plan: High-Cashflow Chai Stall
-
-**Executive Summary:** You do not need a seed round or an investor pitch deck to build a profitable business. A well-located Chai Stall is a **cashflow printing machine** with 70%+ gross margins and negative working capital (customers pay upfront instantly).
-
-Here is your straightforward, step-by-step launch blueprint:
-
-#### 1. Prime Location & Footfall Selection
-• **The Golden Rule:** Footfall speed matters. Never set up where pedestrians are sprinting to catch a train; set up **15 meters outside the turnstiles** where they pause.
-• **Target:** Corporate IT corridors or metro station exits with at least 800 passing pedestrians per hour.
-• **Hours:** 7:30 AM – 10:30 AM (morning commuters) and 4:00 PM – 7:30 PM (afternoon decompression).
-
-#### 2. Lean Equipment & Startup Cost (Under $400 / ₹32,000)
-• Burner & Gas: $65 (₹5,200)
-• Brass Samovar / Kettles: $45 (₹3,600)
-• Milk Chiller & Canisters: $55 (₹4,400)
-• Counter Setup & Signage: $95 (₹7,500)
-• Initial Ingredients: $80 (₹6,400)
-• **Total Upfront Investment:** ~$390 / ₹31,100.
-
-#### 3. Daily Unit Economics
-• **Selling Price:** $0.25 (₹20) per cup
-• **Cost of Goods:** $0.07 (₹6) per cup
-• **Gross Profit:** $0.18 (₹14) per cup (70% margin)
-• **At 300 cups/day:** Daily Net = **$54 / ₹4,200/day** → **$1,620 / ₹1,26,000/month take-home**!
-
-#### 4. The Signature Hook & Repeat Retention
-• **Hygienic Theatre:** Keep brass polished and counter stainless clean; hygiene is the #1 differentiator from dirty roadside stalls.
-• **Audio QR Soundbox:** Instant payment confirmation eliminates theft and keeps the line moving in seconds.
-• **Bun Maska / Biscuit Pairing:** An impulse snack adds 40% margin to every order.`;
-        } else {
-          // Generic small shop / bakery / cafe plan
-          shopPlanData = {
-            shopType: `${classification.categoryName} (Local Retail)`,
-            locationStrategy: {
-              recommendedSpots: [
-                'High-density residential neighborhood corner',
-                'Near morning transit hubs or community parks',
-                'Next to complementary businesses (e.g. grocery stores or salons)',
-              ],
-              peakHours: 'Morning rush & Evening return commute',
-              rentGuideline: 'Rent must never exceed 12% of projected monthly gross turnover.',
-            },
-            equipmentCosts: [
-              { item: 'Essential Display Counter & Point of Sale', cost: '$180' },
-              { item: 'Commercial Grade Preparation Appliances', cost: '$320' },
-              { item: 'Signage & Aesthetic Lighting', cost: '$120' },
-              { item: 'Initial Inventory & Packaging Supplies', cost: '$200' },
-            ],
-            totalInitialInvestment: '$820 Total Setup',
-            unitEconomics: {
-              sellingPricePerUnit: '$4.50 Average Item',
-              costPerUnit: '$1.35 Raw Materials',
-              grossMarginPercent: '70% Gross Margin',
-              dailyVolumeTarget: '70 – 120 Transactions / day',
-              estimatedDailyProfit: '$110 / day net profit',
-              estimatedMonthlyTakeHome: '$3,300 / month net cashflow',
-            },
-            signatureItems: [
-              'Daily Fresh Signature Special (Limited Batch Scarcity)',
-              'Bundle Promotion: Morning item + Beverage combo',
-              'Digital WhatsApp / SMS Loyalty Stamp Card',
-            ],
-            launchChecklist: [
-              'Day 1: Footfall mapping and lease terms negotiation.',
-              'Day 2: Health & trade license registration.',
-              'Day 3: Equipment installation and counter staging.',
-              'Day 4: Menu trial and digital QR payment setup.',
-              'Day 5: Soft launch with neighborhood tasting discounts.',
-            ],
-          };
-
-          aiContent = `### 🏪 Simple Shop Execution Plan: ${classification.categoryName}
-
-**Executive Summary:** This concept succeeds on **local neighborhood trust, tight inventory control, and fast daily cashflow**—not complex venture capital rounds.
-
-#### 1. Location Strategy
-• Secure a storefront or kiosk where daily residential foot traffic naturally funnels.
-• Ensure rent is capped strictly below 12% of your monthly sales revenue.
-
-#### 2. Lean Setup Budget ($820 Total)
-• Focus capital entirely on the customer-facing counter and core preparation equipment. Keep decor clean, minimal, and inviting.
-
-#### 3. Daily Unit Economics
-• Maintain a minimum 65% – 72% gross margin on primary items.
-• Target 80 to 120 daily transactions to clear break-even and generate ~$3,300/month net cashflow.`;
-        }
-      }
-
-      // =====================================================================
-      // CASE 2: TECH STARTUP (AI Platform, SaaS, FinTech, DeepTech, etc.)
-      // =====================================================================
-      else {
-        agentName = 'CoFoundr AI Boardroom (Consensus)';
-        agentTitle = 'Tri-Agent Executive Ensemble';
-        reasoning = [
-          `Identified business category: "${classification.categoryName}"`,
-          'Assembling Tri-Agent Boardroom: CTO (Tech), CMO (GTM), CFO (IR)',
-          'Dr. Vance: Auditing vector retrieval latency and API tier throttling',
-          'Marcus Sterling: Modeling customer CAC payback and sales cycle velocity',
-          'Elena Rostova: Benchmarking Series Seed multiples ($12M–$16M) & dilution safeguards',
-        ];
-
-        aiContent = `### 🏛️ Executive Boardroom Plan: ${classification.categoryName}
-
-**Boardroom Consensus:** Your concept addresses a high-value vertical problem. Rather than treating it like a local shop, we have conducted a full tri-agent strategic debate to bulletproof your architecture, go-to-market motion, and investor narrative.
-
----
-
-#### 1. Technical Co-Founder (CTO - Dr. Evelyn Vance)
-• **Architecture Scalability & Latency:** Avoid unindexed vector search over raw tables. Implement a hybrid BM25 + pgvector retrieval pipeline backed by a Redis LRU semantic cache. This drops P99 inference latency from 2,800ms to **under 140ms** and slashes token API burn by 62%.
-• **Model Cascade Router:** Deploy a multi-tiered gateway that uses distilled fast models for prompt classification and cascades to frontier reasoning models only for mission-critical steps.
-• **Security & Governance:** Ensure SOC-2 Type II isolation: zero customer training data retention and deterministic audit logs.
-
-#### 2. Growth & GTM Co-Founder (CMO - Marcus Sterling)
-• **ICP Definition:** Stop selling to broad generic enterprise teams. Focus on **Series B mid-market operators** whose budget sign-off is under $25k and whose procurement cycle takes 18 days instead of 9 months.
-• **Pricing Elasticity:** Implement a **hybrid pricing model**: Predictable base platform fee ($299/mo) + metered consumption credits. Enterprise buyers demand budget predictability.
-• **Payback Velocity:** Keep CAC payback under 4.5 months through direct outbound to verified design partners.
-
-#### 3. Venture & IR Co-Founder (CFO - Elena Rostova)
-• **Investor Moat & Defensibility:** In partner pitch meetings, VCs will ask: *"What prevents OpenAI from releasing this tomorrow?"* Your defensibility is **workflow lock-in, proprietary data integrations, and SOC-2 audit trails**—not an API wrapper.
-• **Capital Strategy:** Target a **$1.8M – $2.5M Seed Round** at a **$12M – $15M post-money valuation**. Cap pre-seed dilution strictly at 12–15% to maintain 60%+ founder ownership going into Series A.
-
-#### 4. 90-Day Execution Milestones
-• **Month 1:** Deploy private alpha with 5 committed design partners.
-• **Month 2:** Convert design partners to paid annual contracts ($15k+ ARR contracted).
-• **Month 3:** Open Series Seed syndicate with lead venture partner term sheet.`;
-      }
-
-      // Deck audit simulation if requested
-      if (text.toLowerCase().includes('deck') || text.toLowerCase().includes('pitch')) {
-        deckAuditData = {
-          fileName: attachedDeck || 'Startup_Pitch_Deck_Audit.pdf',
-          overallScore: 89,
-          slides: [
-            {
-              slideNumber: 1,
-              name: 'Problem Urgency',
-              score: 95,
-              feedback: 'Demonstrates clear, measurable dollar loss for target accounts.',
-              status: 'pass' as const,
-            },
-            {
-              slideNumber: 2,
-              name: 'Solution & Moat',
-              score: 84,
-              feedback: 'Needs explicit proof of proprietary data or workflow defensibility.',
-              status: 'warning' as const,
-            },
-            {
-              slideNumber: 3,
-              name: 'Unit Economics',
-              score: 88,
-              feedback: 'Healthy 80%+ gross margin with realistic 5-month CAC payback.',
-              status: 'pass' as const,
-            },
-          ],
-        };
-      }
+      const data = await res.json();
+      const aiContent = data.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, AI se jawab nahi mila. Dobara try karo.";
 
       const aiMsg: ChatMessage = {
         id: `ai-${Date.now()}`,
         sender: 'ai',
         agentRole: activeAgent,
-        agentName,
-        agentTitle,
+        agentName: 'CoFoundr AI - Real Gemini',
+        agentTitle: 'Live AI Co-Founder',
         content: aiContent,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        planType,
-        shopPlan: shopPlanData,
-        metrics: {
-          feasibility: classification.isShop ? 98 : 91,
-          tractionScore: classification.isShop ? 95 : 88,
-          investorRisk: 'Low',
-          setupCost: classification.setupCostEstimate,
-          breakEven: classification.dailyBreakEvenOrP99,
-        },
-        reasoningSteps: reasoning,
-        deckAudit: deckAuditData,
+        planType: 'boardroom_plan',
+        reasoningSteps: ['Real Gemini AI se live jawab liya gaya', 'Nakli template hata diya gaya'],
       };
 
       setMessages((prev) => [...prev, aiMsg]);
-      setIsStreaming(false);
-      setAttachedDeck(null);
-    }, 1000);
+    } catch (err) {
+      console.error(err);
+    }
+    setIsStreaming(false);
   };
-
   const handleCopy = (id: string, text: string) => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
